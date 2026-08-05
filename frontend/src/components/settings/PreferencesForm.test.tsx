@@ -27,11 +27,14 @@ describe("PreferencesForm (alert configuration flow)", () => {
     expect(tempSelect.value).toBe("c");
 
     fireEvent.change(tempSelect, { target: { value: "f" } });
+    expect(tempSelect.value).toBe("f");
+
     fireEvent.click(screen.getByRole("button", { name: /save preferences/i }));
 
     expect(await screen.findByText(/saved/i)).toBeInTheDocument();
-    expect(put).toHaveBeenCalledWith(
-      expect.objectContaining({ temperature_unit: "f" }),
-    );
+    expect(put).toHaveBeenCalledTimes(1);
+    const body = put.mock.calls[0][0] as { temperature_unit: string };
+    expect(body.temperature_unit).toBe("f");
+    expect(body).toHaveProperty("alert_thresholds");
   });
 });
