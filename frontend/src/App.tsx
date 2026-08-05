@@ -3,6 +3,7 @@ import { AppLayout } from "./components/layout/AppLayout";
 import type { SectionId } from "./components/layout/navigation";
 import { DashboardPage } from "./pages/DashboardPage";
 import { PlaceholderPage } from "./pages/PlaceholderPage";
+import { LocationsProvider } from "./context/LocationsContext";
 import { getHealth, type HealthResponse } from "./lib/api";
 
 /**
@@ -27,6 +28,14 @@ export default function App() {
 
   return (
     <AppLayout active={section} onNavigate={setSection} apiStatus={apiStatus}>
+      <LocationsContent section={section} />
+    </AppLayout>
+  );
+}
+
+function LocationsContent({ section }: { section: SectionId }) {
+  return (
+    <LocationsProvider>
       {section === "dashboard" && <DashboardPage />}
       {section === "analytics" && (
         <PlaceholderPage
@@ -40,6 +49,6 @@ export default function App() {
           note="Saved locations, units and alert configuration arrive in WBS 1.6.2."
         />
       )}
-    </AppLayout>
+    </LocationsProvider>
   );
 }

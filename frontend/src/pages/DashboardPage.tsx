@@ -1,53 +1,18 @@
-import { useEffect, useState } from "react";
 import { Card, Spinner } from "../components/ui";
 import { DashboardGrid, DashboardRegion } from "../components/layout/DashboardGrid";
-import { CurrentConditions } from "../components/widgets/CurrentConditions";
+import { CurrentConditionsCard } from "../components/widgets/CurrentConditionsCard";
 import { TrendChart } from "../components/widgets/TrendChart";
-import {
-  getCurrentConditions,
-  getLocations,
-  type Location,
-  type Observation,
-} from "../lib/api";
+import { LocationBar } from "../components/locations/LocationBar";
+import { useLocations } from "../context/LocationsContext";
 
 /**
- * Dashboard page (WBS 1.4.3): loads locations, shows current-conditions widgets for
- * the first location. Location selection is added in 1.4.5; richer loading/error
- * states in 1.5.3.
+ * Dashboard page (WBS 1.4.5): driven by the locations context. The active location
+ * feeds the current-conditions and chart widgets; compared locations render side by
+ * side.
  */
 export function DashboardPage() {
-  const [location, setLocation] = useState<Location | null>(null);
-  const [observation, setObservation] = useState<Observation | null>(null);
-  const [state, setState] = useState<"loading" | "ready" | "empty" | "error">("loading");
-
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const locations = await getLocations();
-        if (cancelled) return;
-        if (locations.length === 0) {
-          setState("empty");
-          return;
-        }
-        const first = locations[0];
-        setLocation(first);
-        try {
-          const obs = await getCurrentConditions(first.id);
-          if (cancelled) return;
-          setObservation(obs);
-          setState("ready");
-        } catch {
-          if (!cancelled) setState("empty");
-        }
-      } catch {
-        if (!cancelled) setState("error");
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+  const { status, locations, activeLocation, compareIds } = useLocations();
+  const compared = locations.filter((l) => compareIds.includes(l.id));
 
   return (
     <div>
@@ -55,25 +20,29 @@ export function DashboardPage() {
       <DashboardGrid>
         <DashboardRegion span="full">
           <Card title="Current conditions">
-            {state === "loading" && <Spinner label="Loading current conditions…" />}
-            {state === "error" && (
-              <p className="section-subtle">Could not reach the API.</p>
-            )}
-            {state === "empty" && (
+            {status === "loading" && <Spinner label="Loading locations…" />}
+            {status === "error" && <p className="section-subtle">Could not reach the API.</p>}
+            {status === "ready" && !activeLocation && (
               <p className="section-subtle">
-                No observations yet. Register a location and run ingestion to populate the
+                No locations yet. Register a location and run ingestion to populate the
                 dashboard.
               </p>
             )}
-            {state === "ready" && location && observation && (
-              <CurrentConditions location={location} observation={observation} />
+            {status === "ready" && activeLocation && (
+              <CurrentConditionsCard location={activeLocation} />
             )}
           </Card>
         </DashboardRegion>
+
         <DashboardRegion span="half">
           <Card title="Temperature trend">
-            {location ? (
-              <TrendChart locationId={location.id} metric="temperature_c" unit="°C" kind="line" />
+            {activeLocation ? (
+              <TrendChart
+                locationId={activeLocation.id}
+                metric="temperature_c"
+                unit="°C"
+                kind="line"
+              />
             ) : (
               <p className="section-subtle">Select a location to see trends.</p>
             )}
@@ -81,9 +50,9 @@ export function DashboardPage() {
         </DashboardRegion>
         <DashboardRegion span="half">
           <Card title="Precipitation">
-            {location ? (
+            {activeLocation ? (
               <TrendChart
-                locationId={location.id}
+                locationId={activeLocation.id}
                 metric="precipitation_mm"
                 unit="mm"
                 kind="bar"
@@ -93,9 +62,19 @@ export function DashboardPage() {
             )}
           </Card>
         </DashboardRegion>
+
         <DashboardRegion span="full">
-          <Card title="Locations" subtitle="Controls region — arrives in WBS 1.4.5">
-            <p className="section-subtle">Search and switch between saved locations.</p>
+          <Card title="Locations" subtitle="Search, switch and compare saved locations">
+            <LocationBar />
+            {compared.length > 1 && (
+              <div className="compare-grid" style={{ marginTop: "var(--space-lg)" }}>
+                {compared.map((loc) => (
+                  <Card key={loc.id}>
+                    <CurrentConditionsCard location={loc} compact />
+                  </Card>
+                ))}
+              </div>
+            )}
           </Card>
         </DashboardRegion>
       </DashboardGrid>
