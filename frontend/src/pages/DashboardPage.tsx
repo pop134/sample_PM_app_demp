@@ -1,4 +1,4 @@
-import { Card, Spinner } from "../components/ui";
+import { Card, EmptyState, ErrorState, SkeletonLines } from "../components/ui";
 import { DashboardGrid, DashboardRegion } from "../components/layout/DashboardGrid";
 import { CurrentConditionsCard } from "../components/widgets/CurrentConditionsCard";
 import { TrendChart } from "../components/widgets/TrendChart";
@@ -11,7 +11,7 @@ import { useLocations } from "../context/LocationsContext";
  * side.
  */
 export function DashboardPage() {
-  const { status, locations, activeLocation, compareIds } = useLocations();
+  const { status, locations, activeLocation, compareIds, refresh } = useLocations();
   const compared = locations.filter((l) => compareIds.includes(l.id));
 
   return (
@@ -20,13 +20,16 @@ export function DashboardPage() {
       <DashboardGrid>
         <DashboardRegion span="full">
           <Card title="Current conditions">
-            {status === "loading" && <Spinner label="Loading locations…" />}
-            {status === "error" && <p className="section-subtle">Could not reach the API.</p>}
+            {status === "loading" && <SkeletonLines lines={3} />}
+            {status === "error" && (
+              <ErrorState message="Could not load locations." onRetry={refresh} />
+            )}
             {status === "ready" && !activeLocation && (
-              <p className="section-subtle">
-                No locations yet. Register a location and run ingestion to populate the
-                dashboard.
-              </p>
+              <EmptyState
+                icon="📍"
+                title="No locations yet"
+                message="Register a location and run ingestion to populate the dashboard."
+              />
             )}
             {status === "ready" && activeLocation && (
               <CurrentConditionsCard location={activeLocation} />

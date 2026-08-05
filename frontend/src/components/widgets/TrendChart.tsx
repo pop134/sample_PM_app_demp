@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Spinner } from "../ui";
+import { EmptyState, ErrorState, Skeleton } from "../ui";
 import { BarChart } from "../charts/BarChart";
 import { LineChart } from "../charts/LineChart";
 import type { SeriesPoint } from "../charts/geometry";
@@ -23,12 +23,13 @@ interface TrendChartProps {
 export function TrendChart({ locationId, metric, unit, kind }: TrendChartProps) {
   const [period, setPeriod] = useState<AggregatePeriod>("daily");
 
-  const { data, isLoading, isError } = useQuery(
+  const { data, isLoading, isError, refetch } = useQuery(
     `trends:${locationId}:${metric}:${period}`,
     () => getTrends(locationId, metric, period),
     { staleTime: 60_000 },
   );
   const buckets: AggregateBucket[] | undefined = data?.buckets;
+  const isEmpty = !isLoading && !isError && buckets !== undefined && buckets.length === 0;
 
   const toEpoch = (b: AggregateBucket): number => Date.parse(b.period_start);
 
@@ -50,9 +51,12 @@ export function TrendChart({ locationId, metric, unit, kind }: TrendChartProps) 
         ))}
       </div>
 
-      {isLoading && <Spinner label="Loading chart…" />}
-      {isError && <p className="section-subtle">Could not load analytics.</p>}
-      {!isLoading && !isError && buckets && kind === "line" && (
+      {isLoading && <Skeleton height="220px" radius="var(--radius-md)" />}
+      {isError && <ErrorState message="Could not load analytics." onRetry={refetch} />}
+      {isEmpty && (
+        <EmptyState icon="📉" title="No data in range" message="Try a different range or run ingestion." />
+      )}
+      {!isLoading && !isError && !isEmpty && buckets && kind === "line" && (
         <LineChart
           unit={unit}
           ariaLabel={`${metric} ${period} trend`}
@@ -70,7 +74,7 @@ export function TrendChart({ locationId, metric, unit, kind }: TrendChartProps) 
           }}
         />
       )}
-      {!isLoading && !isError && buckets && kind === "bar" && (
+      {!isLoading && !isError && !isEmpty && buckets && kind === "bar" && (
         <BarChart
           unit={unit}
           color={SERIES_1}
