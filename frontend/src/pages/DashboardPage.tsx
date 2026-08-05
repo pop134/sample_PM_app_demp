@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Card, Spinner } from "../components/ui";
 import { DashboardGrid, DashboardRegion } from "../components/layout/DashboardGrid";
 import { CurrentConditions } from "../components/widgets/CurrentConditions";
+import { TrendChart } from "../components/widgets/TrendChart";
 import {
   getCurrentConditions,
   getLocations,
@@ -70,13 +71,26 @@ export function DashboardPage() {
           </Card>
         </DashboardRegion>
         <DashboardRegion span="half">
-          <Card title="Temperature trend" subtitle="Chart region — arrives in WBS 1.4.4">
-            <p className="section-subtle">Interactive time-series chart.</p>
+          <Card title="Temperature trend">
+            {location ? (
+              <TrendChart locationId={location.id} metric="temperature_c" unit="°C" kind="line" />
+            ) : (
+              <p className="section-subtle">Select a location to see trends.</p>
+            )}
           </Card>
         </DashboardRegion>
         <DashboardRegion span="half">
-          <Card title="Precipitation" subtitle="Chart region — arrives in WBS 1.4.4">
-            <p className="section-subtle">Interactive time-series chart.</p>
+          <Card title="Precipitation">
+            {location ? (
+              <TrendChart
+                locationId={location.id}
+                metric="precipitation_mm"
+                unit="mm"
+                kind="bar"
+              />
+            ) : (
+              <p className="section-subtle">Select a location to see totals.</p>
+            )}
           </Card>
         </DashboardRegion>
         <DashboardRegion span="full">

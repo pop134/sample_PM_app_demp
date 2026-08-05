@@ -72,3 +72,33 @@ export function getLocations(): Promise<Location[]> {
 export function getCurrentConditions(locationId: number): Promise<Observation> {
   return apiGet<Observation>(`/weather/locations/${locationId}/current`);
 }
+
+// --- Analytics (WBS 1.4.4) ----------------------------------------------------
+
+export type AggregatePeriod = "daily" | "weekly" | "monthly";
+
+export interface AggregateBucket {
+  period_start: string;
+  count: number;
+  average: number | null;
+  minimum: number | null;
+  maximum: number | null;
+  total: number;
+  change_from_previous: number | null;
+}
+
+export interface TrendResponse {
+  location_id: number;
+  metric: string;
+  period: string;
+  buckets: AggregateBucket[];
+}
+
+export function getTrends(
+  locationId: number,
+  metric: string,
+  period: AggregatePeriod,
+): Promise<TrendResponse> {
+  const query = new URLSearchParams({ metric, period }).toString();
+  return apiGet<TrendResponse>(`/analytics/locations/${locationId}/trends?${query}`);
+}
