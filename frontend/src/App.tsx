@@ -3,7 +3,9 @@ import { AppLayout } from "./components/layout/AppLayout";
 import type { SectionId } from "./components/layout/navigation";
 import { DashboardPage } from "./pages/DashboardPage";
 import { PlaceholderPage } from "./pages/PlaceholderPage";
+import { SettingsPage } from "./pages/SettingsPage";
 import { LocationsProvider } from "./context/LocationsContext";
+import { AuthProvider } from "./context/AuthContext";
 import { getHealth, type HealthResponse } from "./lib/api";
 
 /**
@@ -27,9 +29,11 @@ export default function App() {
   };
 
   return (
-    <AppLayout active={section} onNavigate={setSection} apiStatus={apiStatus}>
-      <LocationsContent section={section} />
-    </AppLayout>
+    <AuthProvider>
+      <AppLayout active={section} onNavigate={setSection} apiStatus={apiStatus}>
+        <LocationsContent section={section} />
+      </AppLayout>
+    </AuthProvider>
   );
 }
 
@@ -40,15 +44,10 @@ function LocationsContent({ section }: { section: SectionId }) {
       {section === "analytics" && (
         <PlaceholderPage
           title="Analytics"
-          note="Trends, anomalies and forecast accuracy visualizations arrive in WBS 1.4.4."
+          note="Deeper analytics views build on the dashboard charts (WBS 1.4.4) and API."
         />
       )}
-      {section === "settings" && (
-        <PlaceholderPage
-          title="Settings"
-          note="Saved locations, units and alert configuration arrive in WBS 1.6.2."
-        />
-      )}
+      {section === "settings" && <SettingsPage />}
     </LocationsProvider>
   );
 }

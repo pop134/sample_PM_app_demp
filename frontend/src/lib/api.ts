@@ -116,6 +116,23 @@ export interface Token {
   token_type: string;
 }
 
+export interface Preferences {
+  temperature_unit: string;
+  wind_unit: string;
+  alert_thresholds: Record<string, Record<string, number>>;
+}
+
+export interface PreferencesUpdate {
+  temperature_unit?: string;
+  wind_unit?: string;
+  alert_thresholds?: Record<string, Record<string, number>>;
+}
+
+export interface SavedLocation {
+  id: number;
+  location: Location;
+}
+
 // --- Grouped client -----------------------------------------------------------
 
 export const api = {
@@ -158,6 +175,24 @@ export const api = {
     forecastAccuracy: (id: number, metric: string) =>
       request<ForecastAccuracy>(`/analytics/locations/${id}/forecast-accuracy`, {
         query: { metric },
+      }),
+  },
+
+  preferences: {
+    get: () => request<Preferences>("/preferences", { auth: true }),
+    update: (payload: PreferencesUpdate) =>
+      request<Preferences>("/preferences", { method: "PUT", body: payload, auth: true }),
+    listSaved: () => request<SavedLocation[]>("/preferences/locations", { auth: true }),
+    addSaved: (locationId: number) =>
+      request<SavedLocation>("/preferences/locations", {
+        method: "POST",
+        body: { location_id: locationId },
+        auth: true,
+      }),
+    removeSaved: (locationId: number) =>
+      request<void>(`/preferences/locations/${locationId}`, {
+        method: "DELETE",
+        auth: true,
       }),
   },
 };
