@@ -2,6 +2,7 @@ import { Card, EmptyState, ErrorState, SkeletonLines } from "../components/ui";
 import { DashboardGrid, DashboardRegion } from "../components/layout/DashboardGrid";
 import { CurrentConditionsCard } from "../components/widgets/CurrentConditionsCard";
 import { TrendChart } from "../components/widgets/TrendChart";
+import { AlertsPanel } from "../components/widgets/AlertsPanel";
 import { LocationBar } from "../components/locations/LocationBar";
 import { useLocations } from "../context/LocationsContext";
 
@@ -32,10 +33,18 @@ export function DashboardPage() {
               />
             )}
             {status === "ready" && activeLocation && (
-              <CurrentConditionsCard location={activeLocation} />
+              <CurrentConditionsCard location={activeLocation} live />
             )}
           </Card>
         </DashboardRegion>
+
+        {activeLocation && (
+          <DashboardRegion span="full">
+            <Card title="Alerts" subtitle="Auto-refreshing threshold breaches & spikes">
+              <AlertsPanel locationId={activeLocation.id} />
+            </Card>
+          </DashboardRegion>
+        )}
 
         <DashboardRegion span="half">
           <Card title="Temperature trend">

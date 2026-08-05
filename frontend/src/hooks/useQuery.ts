@@ -16,6 +16,7 @@ export interface UseQueryResult<T> {
   isLoading: boolean;
   isFetching: boolean;
   isError: boolean;
+  dataUpdatedAt: number;
   refetch: () => void;
 }
 
@@ -55,6 +56,7 @@ export function useQuery<T>(
     isLoading: (!entry || entry.status === "loading") && data === undefined,
     isFetching: entry?.status === "loading",
     isError: entry?.status === "error",
+    dataUpdatedAt: entry?.updatedAt ?? 0,
     refetch: () => runQuery(key, fetcher, 0),
   };
 }
