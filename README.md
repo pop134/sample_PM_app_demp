@@ -109,6 +109,14 @@ The frontend image builds the Vite bundle and serves it via nginx, which also pr
 - `cicd` — builds both container images on every PR; on `main`, publishes them to
   GHCR and runs a (placeholder) deploy stage.
 
+### Observability
+
+- **Logging** — structured logs (human or JSON via `LOG_JSON`), configured at startup.
+- **Metrics** — `GET /api/metrics` (JSON) and `GET /api/metrics/prometheus` (scrapeable):
+  request counts, latency, `api_errors_total`, `ingestion_failures_total`.
+- **Alerting** — critical events (server errors, ingestion failures) emit `CRITICAL`
+  logs and, if `ALERT_WEBHOOK_URL` is set, POST to that webhook for on-call paging.
+
 ## Configuration
 
 Backend settings are read from environment variables (see `backend/.env.example`).

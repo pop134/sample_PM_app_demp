@@ -13,6 +13,7 @@ from app.api import (
     auth,
     health,
     ingestion,
+    metrics,
     preferences,
     providers,
     weather,
@@ -20,6 +21,7 @@ from app.api import (
 
 api_router = APIRouter()
 api_router.include_router(health.router)
+api_router.include_router(metrics.router)
 api_router.include_router(auth.router)
 api_router.include_router(providers.router)
 api_router.include_router(ingestion.router)

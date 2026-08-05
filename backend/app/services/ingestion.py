@@ -16,6 +16,8 @@ from typing import Protocol
 
 from pydantic import BaseModel, Field
 
+from app.core.metrics import metrics
+from app.core.monitoring import notify_critical
 from app.schemas.weather import CurrentConditions, GeoPoint
 from app.services.providers import ProviderError, get_provider
 
@@ -75,6 +77,8 @@ async def poll_once(
             conditions = await provider.get_current(location.point)
         except ProviderError:
             logger.warning("ingestion: failed to poll %s", location.name, exc_info=True)
+            metrics.inc("ingestion_failures_total", location=location.name)
+            notify_critical("ingestion_failure", location=location.name)
             continue
         await sink.store(location, conditions)
         stored += 1

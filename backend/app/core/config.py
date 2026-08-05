@@ -22,6 +22,11 @@ class Settings(BaseSettings):
     environment: str = "development"
     debug: bool = True
 
+    # Observability (WBS 1.7.4).
+    log_level: str = "INFO"
+    log_json: bool = False
+    alert_webhook_url: str | None = None
+
     database_url: str = "sqlite:///./weather.db"
 
     cors_origins: list[str] = ["http://localhost:5173", "http://localhost:3000"]
