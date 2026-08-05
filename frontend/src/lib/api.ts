@@ -39,3 +39,36 @@ export interface HealthResponse {
 export function getHealth(): Promise<HealthResponse> {
   return apiGet<HealthResponse>("/health");
 }
+
+// --- Weather domain types & calls (WBS 1.4.3) ---------------------------------
+
+export interface Location {
+  id: number;
+  name: string;
+  latitude: number;
+  longitude: number;
+  country: string | null;
+  timezone: string | null;
+  elevation_m: number | null;
+}
+
+export interface Observation {
+  id: number;
+  provider: string;
+  observed_at: string;
+  temperature_c: number | null;
+  humidity_pct: number | null;
+  wind_speed_ms: number | null;
+  wind_direction_deg: number | null;
+  precipitation_mm: number | null;
+  pressure_hpa: number | null;
+  condition: string | null;
+}
+
+export function getLocations(): Promise<Location[]> {
+  return apiGet<Location[]>("/weather/locations");
+}
+
+export function getCurrentConditions(locationId: number): Promise<Observation> {
+  return apiGet<Observation>(`/weather/locations/${locationId}/current`);
+}

@@ -1,18 +1,72 @@
-import { Card } from "../components/ui";
+import { useEffect, useState } from "react";
+import { Card, Spinner } from "../components/ui";
 import { DashboardGrid, DashboardRegion } from "../components/layout/DashboardGrid";
+import { CurrentConditions } from "../components/widgets/CurrentConditions";
+import {
+  getCurrentConditions,
+  getLocations,
+  type Location,
+  type Observation,
+} from "../lib/api";
 
 /**
- * Dashboard page (WBS 1.4.2): lays out the widget regions. The regions are filled by
- * later tasks — current conditions (1.4.3), charts (1.4.4), location controls (1.4.5).
+ * Dashboard page (WBS 1.4.3): loads locations, shows current-conditions widgets for
+ * the first location. Location selection is added in 1.4.5; richer loading/error
+ * states in 1.5.3.
  */
 export function DashboardPage() {
+  const [location, setLocation] = useState<Location | null>(null);
+  const [observation, setObservation] = useState<Observation | null>(null);
+  const [state, setState] = useState<"loading" | "ready" | "empty" | "error">("loading");
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const locations = await getLocations();
+        if (cancelled) return;
+        if (locations.length === 0) {
+          setState("empty");
+          return;
+        }
+        const first = locations[0];
+        setLocation(first);
+        try {
+          const obs = await getCurrentConditions(first.id);
+          if (cancelled) return;
+          setObservation(obs);
+          setState("ready");
+        } catch {
+          if (!cancelled) setState("empty");
+        }
+      } catch {
+        if (!cancelled) setState("error");
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   return (
     <div>
       <h2 className="section-heading">Dashboard</h2>
       <DashboardGrid>
         <DashboardRegion span="full">
-          <Card title="Current conditions" subtitle="Widget region — arrives in WBS 1.4.3">
-            <p className="section-subtle">Live current-conditions summary cards.</p>
+          <Card title="Current conditions">
+            {state === "loading" && <Spinner label="Loading current conditions…" />}
+            {state === "error" && (
+              <p className="section-subtle">Could not reach the API.</p>
+            )}
+            {state === "empty" && (
+              <p className="section-subtle">
+                No observations yet. Register a location and run ingestion to populate the
+                dashboard.
+              </p>
+            )}
+            {state === "ready" && location && observation && (
+              <CurrentConditions location={location} observation={observation} />
+            )}
           </Card>
         </DashboardRegion>
         <DashboardRegion span="half">
