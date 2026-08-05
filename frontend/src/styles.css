@@ -17,6 +17,7 @@ body {
   font-size: var(--font-md);
   line-height: 1.5;
   transition: background-color 0.2s ease, color 0.2s ease;
+  overflow-x: hidden; /* the page body never scrolls horizontally (WBS 1.4.6) */
 }
 
 a {

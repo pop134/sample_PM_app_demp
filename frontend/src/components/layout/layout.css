@@ -77,6 +77,18 @@
   max-width: 1200px;
   width: 100%;
   margin: 0 auto;
+  min-width: 0; /* allow grid/flex children (charts) to shrink instead of overflow */
+}
+
+.layout__menu-button {
+  border: 1px solid var(--color-border);
+  background: transparent;
+  color: var(--color-text);
+  border-radius: var(--radius-md);
+  font-size: var(--font-md);
+  line-height: 1;
+  padding: 0.35rem 0.55rem;
+  cursor: pointer;
 }
 
 .dashboard-grid {
@@ -91,6 +103,9 @@
 .dashboard-region--half {
   grid-column: span 1;
 }
+.dashboard-region {
+  min-width: 0; /* prevent chart SVGs from forcing the grid wider than the viewport */
+}
 
 .section-heading {
   margin: 0 0 var(--space-md);
@@ -100,18 +115,46 @@
   color: var(--color-text-muted);
 }
 
-/* Collapse to a single column on narrow screens (baseline; refined in 1.4.6). */
-@media (max-width: 820px) {
+/* Tablet: tighten the sidebar and gaps. */
+@media (max-width: 1024px) {
   .layout__body {
-    grid-template-columns: 1fr;
+    grid-template-columns: 180px 1fr;
+  }
+  .dashboard-grid {
+    gap: var(--space-md);
+  }
+}
+
+/* Mobile: single column; the sidebar is toggled open as a horizontal bar. */
+@media (max-width: 820px) {
+  .layout__body--mobile {
+    display: block;
   }
   .layout__sidebar {
     flex-direction: row;
+    flex-wrap: wrap;
     overflow-x: auto;
     border-right: none;
     border-bottom: 1px solid var(--color-border);
   }
+  .layout__nav-item {
+    flex: 1 1 auto;
+    justify-content: center;
+  }
+  .layout__main {
+    padding: var(--space-md);
+  }
   .dashboard-grid {
     grid-template-columns: 1fr;
+  }
+  .layout__header {
+    padding: var(--space-sm) var(--space-md);
+  }
+}
+
+/* Very small screens: hide the brand wordmark to save room. */
+@media (max-width: 420px) {
+  .layout__brand-text {
+    display: none;
   }
 }
