@@ -1,33 +1,17 @@
 /**
- * Minimal typed fetch wrapper for the backend API.
+ * Typed API surface (WBS 1.5.1).
  *
- * A fuller, OpenAPI-aligned client with caching and error mapping arrives with WBS
- * tasks 1.5.1 and 1.5.2. This foundation version centralises the base URL and JSON
- * handling so feature code has a single place to call.
+ * A thin, hand-written client aligned with the backend OpenAPI contract. All calls go
+ * through the shared `request` helper (base URL, auth, error mapping) in `client.ts`.
+ * Endpoints are grouped under `api`; backward-compatible named helpers are re-exported
+ * for existing callers.
  */
 
-const API_BASE = import.meta.env.VITE_API_BASE ?? "/api";
+import { ApiError, request, tokenStore } from "./client";
 
-export class ApiError extends Error {
-  constructor(
-    message: string,
-    readonly status: number,
-  ) {
-    super(message);
-    this.name = "ApiError";
-  }
-}
+export { ApiError, tokenStore };
 
-export async function apiGet<T>(path: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(`${API_BASE}${path}`, {
-    headers: { Accept: "application/json" },
-    ...init,
-  });
-  if (!res.ok) {
-    throw new ApiError(`Request to ${path} failed`, res.status);
-  }
-  return (await res.json()) as T;
-}
+// --- Types (aligned with backend schemas) -------------------------------------
 
 export interface HealthResponse {
   status: string;
@@ -35,12 +19,6 @@ export interface HealthResponse {
   environment: string;
   version: string;
 }
-
-export function getHealth(): Promise<HealthResponse> {
-  return apiGet<HealthResponse>("/health");
-}
-
-// --- Weather domain types & calls (WBS 1.4.3) ---------------------------------
 
 export interface Location {
   id: number;
@@ -50,6 +28,15 @@ export interface Location {
   country: string | null;
   timezone: string | null;
   elevation_m: number | null;
+}
+
+export interface LocationCreate {
+  name: string;
+  latitude: number;
+  longitude: number;
+  country?: string | null;
+  timezone?: string | null;
+  elevation_m?: number | null;
 }
 
 export interface Observation {
@@ -65,15 +52,12 @@ export interface Observation {
   condition: string | null;
 }
 
-export function getLocations(): Promise<Location[]> {
-  return apiGet<Location[]>("/weather/locations");
+export interface Page<T> {
+  items: T[];
+  total: number;
+  limit: number;
+  offset: number;
 }
-
-export function getCurrentConditions(locationId: number): Promise<Observation> {
-  return apiGet<Observation>(`/weather/locations/${locationId}/current`);
-}
-
-// --- Analytics (WBS 1.4.4) ----------------------------------------------------
 
 export type AggregatePeriod = "daily" | "weekly" | "monthly";
 
@@ -94,11 +78,94 @@ export interface TrendResponse {
   buckets: AggregateBucket[];
 }
 
-export function getTrends(
-  locationId: number,
-  metric: string,
-  period: AggregatePeriod,
-): Promise<TrendResponse> {
-  const query = new URLSearchParams({ metric, period }).toString();
-  return apiGet<TrendResponse>(`/analytics/locations/${locationId}/trends?${query}`);
+export interface Alert {
+  id: number;
+  location_id: number;
+  observation_id: number | null;
+  metric: string;
+  value: number;
+  threshold: number | null;
+  kind: string;
+  severity: string;
+  message: string;
+  created_at: string;
 }
+
+export interface ForecastAccuracy {
+  location_id: number;
+  metric: string;
+  horizon: string | null;
+  forecast_id: number;
+  generated_at: string;
+  sample_count: number;
+  mae: number | null;
+  rmse: number | null;
+  bias: number | null;
+}
+
+export interface UserProfile {
+  id: number;
+  email: string;
+  role: string;
+  is_active: boolean;
+  created_at: string;
+}
+
+export interface Token {
+  access_token: string;
+  token_type: string;
+}
+
+// --- Grouped client -----------------------------------------------------------
+
+export const api = {
+  health: () => request<HealthResponse>("/health"),
+
+  auth: {
+    async login(email: string, password: string): Promise<Token> {
+      const token = await request<Token>("/auth/login", {
+        method: "POST",
+        body: { email, password },
+      });
+      tokenStore.set(token.access_token);
+      return token;
+    },
+    register: (email: string, password: string) =>
+      request<UserProfile>("/auth/register", { method: "POST", body: { email, password } }),
+    me: () => request<UserProfile>("/auth/me", { auth: true }),
+    logout: () => tokenStore.clear(),
+  },
+
+  locations: {
+    list: () => request<Location[]>("/weather/locations"),
+    get: (id: number) => request<Location>(`/weather/locations/${id}`),
+    create: (payload: LocationCreate) =>
+      request<Location>("/weather/locations", { method: "POST", body: payload, auth: true }),
+    current: (id: number) => request<Observation>(`/weather/locations/${id}/current`),
+    observations: (
+      id: number,
+      params: { start?: string; end?: string; limit?: number; offset?: number } = {},
+    ) => request<Page<Observation>>(`/weather/locations/${id}/observations`, { query: params }),
+  },
+
+  analytics: {
+    trends: (id: number, metric: string, period: AggregatePeriod) =>
+      request<TrendResponse>(`/analytics/locations/${id}/trends`, { query: { metric, period } }),
+    alerts: (id: number, limit = 50) =>
+      request<Alert[]>(`/analytics/locations/${id}/alerts`, { query: { limit } }),
+    evaluate: (id: number) =>
+      request<Alert[]>(`/analytics/locations/${id}/evaluate`, { method: "POST" }),
+    forecastAccuracy: (id: number, metric: string) =>
+      request<ForecastAccuracy>(`/analytics/locations/${id}/forecast-accuracy`, {
+        query: { metric },
+      }),
+  },
+};
+
+// --- Backward-compatible named helpers ----------------------------------------
+
+export const getHealth = () => api.health();
+export const getLocations = () => api.locations.list();
+export const getCurrentConditions = (id: number) => api.locations.current(id);
+export const getTrends = (id: number, metric: string, period: AggregatePeriod) =>
+  api.analytics.trends(id, metric, period);
