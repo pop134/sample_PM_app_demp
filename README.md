@@ -89,6 +89,26 @@ python -m scripts.export_openapi openapi.json
 
 Authenticate with `POST /api/auth/login`, then send `Authorization: Bearer <token>`.
 
+## Containerized deployment
+
+Both services are containerized and orchestrated with Docker Compose:
+
+```bash
+docker compose up --build
+# Frontend: http://localhost:8080
+# Backend API / docs: http://localhost:8000/docs
+```
+
+The frontend image builds the Vite bundle and serves it via nginx, which also proxies
+`/api` to the backend. The backend persists its SQLite database to a named volume.
+
+### CI/CD
+
+- `backend-ci` — ruff + pytest (with a coverage gate) on backend changes.
+- `frontend-ci` — typecheck, Vitest and Vite build on frontend changes.
+- `cicd` — builds both container images on every PR; on `main`, publishes them to
+  GHCR and runs a (placeholder) deploy stage.
+
 ## Configuration
 
 Backend settings are read from environment variables (see `backend/.env.example`).
