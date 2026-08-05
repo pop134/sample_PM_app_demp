@@ -1,9 +1,12 @@
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-addopts = "-q"
+addopts = "-q --cov=app --cov-report=term-missing --cov-fail-under=85"
 asyncio_mode = "strict"
 asyncio_default_fixture_loop_scope = "function"
 filterwarnings = ["ignore::DeprecationWarning"]
+
+[tool.coverage.run]
+omit = ["app/main.py"]
 
 [tool.ruff]
 line-length = 100
