@@ -1,13 +1,11 @@
-import { useEffect, useState } from "react";
 import { Spinner } from "../ui";
 import { CurrentConditions } from "./CurrentConditions";
-import { getCurrentConditions, type Location, type Observation } from "../../lib/api";
-
-type Status = "loading" | "ready" | "empty" | "error";
+import { useQuery } from "../../hooks/useQuery";
+import { ApiError, getCurrentConditions, type Location } from "../../lib/api";
 
 /**
- * Fetches and renders current conditions for a single location (WBS 1.4.3/1.4.5).
- * Used both for the active location and each compared location.
+ * Fetches and renders current conditions for a single location (WBS 1.4.3/1.4.5),
+ * cached via useQuery (WBS 1.5.2) so switching between locations is instant.
  */
 export function CurrentConditionsCard({
   location,
@@ -16,40 +14,27 @@ export function CurrentConditionsCard({
   location: Location;
   compact?: boolean;
 }) {
-  const [observation, setObservation] = useState<Observation | null>(null);
-  const [status, setStatus] = useState<Status>("loading");
+  const { data: observation, isLoading, error } = useQuery(
+    `current:${location.id}`,
+    () => getCurrentConditions(location.id),
+    { staleTime: 60_000 },
+  );
 
-  useEffect(() => {
-    let cancelled = false;
-    setStatus("loading");
-    getCurrentConditions(location.id)
-      .then((obs) => {
-        if (cancelled) return;
-        setObservation(obs);
-        setStatus("ready");
-      })
-      .catch((err: unknown) => {
-        if (cancelled) return;
-        // A 404 means the location has no stored observations yet.
-        const status404 =
-          typeof err === "object" && err !== null && "status" in err
-            ? (err as { status: number }).status === 404
-            : false;
-        setStatus(status404 ? "empty" : "error");
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [location.id]);
+  if (isLoading) return <Spinner label="Loading…" />;
 
-  if (status === "loading") return <Spinner label="Loading…" />;
-  if (status === "error") return <p className="section-subtle">Could not reach the API.</p>;
-  if (status === "empty" || !observation) {
+  if (error) {
+    const isMissing = error instanceof ApiError && error.status === 404;
     return (
       <p className="section-subtle">
-        No observations for {location.name} yet.
+        {isMissing
+          ? `No observations for ${location.name} yet.`
+          : "Could not reach the API."}
       </p>
     );
+  }
+
+  if (!observation) {
+    return <p className="section-subtle">No observations for {location.name} yet.</p>;
   }
 
   if (compact) {
