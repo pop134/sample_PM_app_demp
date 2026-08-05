@@ -8,7 +8,15 @@ from __future__ import annotations
 
 from fastapi import APIRouter
 
-from app.api import analytics, auth, health, ingestion, providers, weather
+from app.api import (
+    analytics,
+    auth,
+    health,
+    ingestion,
+    preferences,
+    providers,
+    weather,
+)
 
 api_router = APIRouter()
 api_router.include_router(health.router)
@@ -17,3 +25,4 @@ api_router.include_router(providers.router)
 api_router.include_router(ingestion.router)
 api_router.include_router(weather.router)
 api_router.include_router(analytics.router)
+api_router.include_router(preferences.router)

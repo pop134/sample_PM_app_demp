@@ -42,6 +42,10 @@ TAGS_METADATA = [
         "name": "analytics",
         "description": "Trends, aggregates, anomalies and forecast-accuracy metrics.",
     },
+    {
+        "name": "preferences",
+        "description": "Per-user saved locations, units and alert thresholds.",
+    },
 ]
 
 CONTACT = {"name": "Weather Dashboard Team", "url": "https://github.com/pop134/sample_PM_v2"}

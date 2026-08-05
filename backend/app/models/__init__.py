@@ -6,6 +6,7 @@ Importing the models here registers their metadata on ``Base`` so
 
 from app.models.alert import Alert
 from app.models.forecast import Forecast, ForecastPoint
+from app.models.preferences import SavedLocation, UserPreferences
 from app.models.user import User, UserRole
 from app.models.weather import Location, Observation
 
@@ -17,4 +18,6 @@ __all__ = [
     "User",
     "UserRole",
     "Alert",
+    "UserPreferences",
+    "SavedLocation",
 ]
